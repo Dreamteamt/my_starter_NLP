@@ -1,0 +1,143 @@
+import sklearn
+import pandas as pd
+import numpy as np
+
+
+# REPLACE TO YOUR FEATURE EXTRACTOR
+def extract_features(text_list):
+    feature_list = []
+    for text in text_list:
+        words = text.lower().split()
+        feature = words[0]
+        feature_list.append(feature)
+    return feature_list
+
+
+# REPLACE TO YOUR MODEL
+class Model():
+    def __init__(self):
+        self.vocab = dict()
+
+    def fit(self, X_list, y_list):
+        # print(X_list)
+        for i in range(len(X_list)):
+            X = X_list['text'][i].split()
+            y = y_list['category'][i]
+            # if len(X) > 5:
+            # print(X, y)
+            # print()
+            for t in X:
+                i = t[:min(5, len(t))]
+                i = i.lower()
+                if i in self.vocab:
+                    self.vocab[i].append(y)
+                else:
+                    self.vocab[i] = [y]
+        self.default_category = "on"
+
+    def predict_sample(self, X):
+        # print(X)
+        T = X.split()
+        ans = {}
+        for rr in T:
+            j = rr[:min(5, len(rr))]
+            j = j.lower()
+            # j[0] = to_lower(j[0])
+            # print(j)
+            if j in self.vocab:
+                tot = {}
+                for u in self.vocab[j]:
+                    if u in tot:
+                        tot[u] = tot[u] + 1
+                    else:
+                        tot[u] = 1
+                for i in tot:
+                    if len(self.vocab[j]) > 0:
+                        if i in ans:
+                            ans[i] += tot[i] / len(self.vocab[j])
+                        else:
+                            ans[i] = tot[i] / len(self.vocab[j])
+                # for u in self.vocab[j]:
+                #     if u in ans:
+                #         ans[u] = ans[u] + 1
+                #         tot[u] = tot[u] + 1
+                #     else:
+                #         tot[u] = 1
+                #         ans[u] = 1
+        mn = "Finance"
+        mx = "Finance"
+        for i in ans:
+            if ans[i] > ans[mx]:
+                mx = i
+        return mx
+
+    def predict(self, X_list):
+        answer = []
+        for X in X_list['text']:
+            answer.append(self.predict_sample(X))
+        return answer
+
+
+def read_data_known(file_path):
+    df = pd.read_csv(file_path, sep='\t')
+
+    df = df[df['category'] != 'UNKNOWN']
+
+    N = len(df)
+    df_train = df.iloc[:N // 2]
+    df_test = df.iloc[N // 2:]
+
+    y_train = df_train['category'].str.strip().tolist()
+    y_test = df_test['category'].str.strip().tolist()
+
+    X_train = extract_features(df_train['text'].tolist())
+    X_test = extract_features(df_test['text'].tolist())
+    return X_train, y_train, X_test, y_test
+
+
+def read_data(file_path):
+    df = pd.read_csv(file_path, sep='\t')
+
+    df_train = pd.DataFrame(df[df['category'] != 'UNKNOWN'])
+    df_test = pd.DataFrame(df[df['category'] == 'UNKNOWN'])
+    # print(df)
+    y_train = df_train[['category']]
+
+    X_train = df_train[['text']]
+    X_test =df_test[['text']]
+    # print(X_test)
+    return X_train, y_train, X_test
+
+
+
+MODE = "SUBMIT" # "SUBMIT" OR "LOCAL"
+
+
+# READ DATA
+if MODE == "LOCAL":
+    X_train, y_train, X_test, y_test = read_data_known("input.txt")
+else:
+    X_train, y_train, X_test = read_data("input.txt")
+    y_test = None
+
+
+# TRAIN MODEL
+model = Model()
+# print(y_train)
+model.fit(X_train, y_train)
+y_predict = model.predict(X_test)
+
+
+# OPTIONAL METRICS ONLY FOR LOCAL TEST
+if y_test:
+    ok = (np.array(y_test) == np.array(y_predict)).sum()
+    accuracy = ok / len(y_test) * 100
+    print("ACCURACY:", accuracy)
+
+
+# # WRITE ANSWER
+print(y_predict)
+with open("output.txt", "w") as f:
+    # print(y_predict)
+    for i in y_predict:
+        f.write(str(i) + '\n')
