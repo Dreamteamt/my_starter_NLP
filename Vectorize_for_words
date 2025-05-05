@@ -1,8 +1,0 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-texts = ["I like AI", "I like machine learning"]
-tfidf = TfidfVectorizer()
-X = tfidf.fit_transform(texts)
-
-print(tfidf.get_feature_names_out())
-print(X.toarray())
