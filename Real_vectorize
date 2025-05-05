@@ -1,0 +1,8 @@
+from sklearn.feature_extraction.text import CountVectorizer
+
+texts = ["I like AI", "I like machine learning"]
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(texts)
+
+print(vectorizer.get_feature_names_out())
+print(X.toarray())
